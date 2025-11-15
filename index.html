@@ -1,0 +1,474 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Liga de Pickleball – Sorteio, Tabela e Classificação</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #22c55e;
+      --accent2: #60a5fa;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg,#0b1022,#0f172a 30%,#0b1022);
+      color: var(--text);
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 24px; margin: 0 0 16px; }
+    h2 { font-size: 18px; margin: 24px 0 8px; color: #fff; }
+    p, label, small { color: var(--muted); }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; backdrop-filter: blur(8px);
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    textarea, select, input[type="text"] {
+      width: 100%; background: #0b1220; border: 1px solid #1f2937; color: #e5e7eb;
+      border-radius: 10px; padding: 10px; outline: none; resize: vertical; min-height: 120px;
+    }
+    select { min-height: auto; }
+    .btn {
+      appearance: none; border: 1px solid #1f2937; background: #0b1220;
+      color: #e5e7eb; padding: 10px 14px; border-radius: 10px; cursor: pointer;
+      transition: .15s ease-in-out; font-weight: 600;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: #334155; }
+    .btn-primary { background: linear-gradient(135deg, #22c55e, #16a34a); border-color: transparent; color: #0b1220; }
+    .btn-primary:hover { filter: brightness(1.05); }
+    .btn-accent { background: linear-gradient(135deg, #60a5fa, #3b82f6); border-color: transparent; color: #0b1220; }
+    .btn-warn { background: linear-gradient(135deg, #f59e0b, #f97316); border-color: transparent; color: #0b1220; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: transparent; color: #0b1220; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .muted { color: var(--muted); }
+    .pairs {
+      display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 10px;
+    }
+    .pair {
+      background: #0b1220; border: 1px solid #1f2937; border-radius: 10px; padding: 10px;
+    }
+    .pair strong { color: #fff; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1f2937; color: #cbd5e1; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #1f2937; text-align: left; font-size: 14px; }
+    th { color: #cbd5e1; font-weight: 600; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+    .finalistas { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 12px; }
+    .finalista { border: 1px dashed #334155; border-radius: 10px; padding: 12px; }
+    .ok { color: var(--accent); font-weight: 600; }
+    .warn { color: var(--warn); font-weight: 600; }
+    .error { color: var(--danger); font-weight: 600; }
+    .footer { margin-top: 32px; color: var(--muted); font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Liga de Pickleball – Sorteio, Tabela e Classificação</h1>
+    <p class="muted">Insira os atletas, forme as duplas, gere a ordem dos jogos, informe os resultados e veja os finalistas.</p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Inscrição</h2>
+        <div class="grid grid-2">
+          <div>
+            <label for="seeds"><strong>Cabeças de chave</strong> (5)</label>
+            <textarea id="seeds" placeholder="Um atleta por linha"></textarea>
+          </div>
+          <div>
+            <label for="others"><strong>Demais atletas</strong> (5)</label>
+            <textarea id="others" placeholder="Um atleta por linha"></textarea>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <button id="btnSortear1" class="btn">Sortear 1 dupla</button>
+          <button id="btnSortearTodos" class="btn btn-primary">Sortear todas</button>
+          <button id="btnRefazer" class="btn btn-warn">Refazer sorteio (manter inscritos)</button>
+          <button id="btnResetar" class="btn btn-danger">Resetar tudo</button>
+        </div>
+        <small class="muted">O sorteio sempre forma cada dupla com 1 cabeça de chave + 1 atleta do outro grupo.</small>
+      </div>
+
+      <div class="card">
+        <h2>Duplas formadas</h2>
+        <div id="pairsList" class="pairs"></div>
+        <div class="row" style="margin-top: 10px;">
+          <button id="btnGerarJogos" class="btn btn-accent" disabled>Sortear ordem dos jogos (fase de classificação)</button>
+        </div>
+        <small class="muted">Serão 10 jogos (todas as duplas se enfrentam 1 vez).</small>
+      </div>
+    </div>
+
+    <div class="card" id="jogosCard" style="display:none;">
+      <div class="section-title">
+        <h2>Jogos da fase de classificação</h2>
+        <div class="row">
+          <button id="btnReordenarJogos" class="btn">Reordenar jogos</button>
+          <button id="btnLimparResultados" class="btn btn-warn">Limpar resultados</button>
+        </div>
+      </div>
+      <div id="jogosList"></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="section-title">
+          <h2>Tabela de classificação</h2>
+          <button id="btnFinalistas" class="btn btn-primary">Definir finalistas</button>
+        </div>
+        <small class="muted">Critério de classificação: 1) Saldo de Sets, 2) Vitórias, 3) Sets Pró.</small>
+        <div id="tabelaWrap" style="margin-top: 10px;"></div>
+      </div>
+
+      <div class="card">
+        <h2>Finalistas</h2>
+        <div id="finalistas" class="finalistas">
+          <div class="finalista"><strong>1º</strong><div id="finalista1" class="muted">—</div></div>
+          <div class="finalista"><strong>2º</strong><div id="finalista2" class="muted">—</div></div>
+        </div>
+        <small class="muted">Aparecem após informar todos os resultados e clicar em “Definir finalistas”.</small>
+      </div>
+    </div>
+
+    <div class="footer">
+      Feito para sua liga de Pickleball. Salve este arquivo como index.html e publique grátis (Netlify Drop).
+    </div>
+  </div>
+
+  <script>
+    // Estado
+    let seeds = [];
+    let others = [];
+    let remainingSeeds = [];
+    let remainingOthers = [];
+    let pairs = []; // {id, a, b, label}
+    let matches = []; // {id, t1, t2, order, result: {winner, score}}
+    let nextPairId = 1;
+    let nextMatchId = 1;
+
+    // Utils
+    const $ = s => document.querySelector(s);
+    const el = id => document.getElementById(id);
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+    const uniqueTrimmedNonEmpty = (text) => {
+      const set = new Set();
+      text.split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(n => set.add(n));
+      return Array.from(set);
+    };
+
+    // Renderização
+    function renderPairs() {
+      const wrap = el('pairsList');
+      wrap.innerHTML = '';
+      pairs.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'pair';
+        div.innerHTML = `
+          <div class="badge">Dupla ${idx + 1}</div>
+          <div style="margin-top:6px;"><strong>${p.a}</strong> + <strong>${p.b}</strong></div>
+        `;
+        wrap.appendChild(div);
+      });
+      el('btnGerarJogos').disabled = pairs.length !== 5;
+    }
+
+    function renderMatches() {
+      const jogosCard = el('jogosCard');
+      if (matches.length === 0) {
+        jogosCard.style.display = 'none';
+        el('jogosList').innerHTML = '';
+        return;
+      }
+      jogosCard.style.display = '';
+      const list = el('jogosList');
+      list.innerHTML = '';
+      matches
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .forEach(m => {
+          const t1 = pairLabel(m.t1);
+          const t2 = pairLabel(m.t2);
+          const row = document.createElement('div');
+          row.className = 'card';
+          row.style.marginBottom = '10px';
+          row.innerHTML = `
+            <div class="row" style="align-items:center; justify-content:space-between;">
+              <div><strong>Jogo ${m.order}</strong> — ${t1} vs ${t2}</div>
+              <div style="min-width:260px;">
+                <select data-match="${m.id}">
+                  <option value="">Selecione o resultado</option>
+                  <option value="t1-2-0">${t1} vence 2–0</option>
+                  <option value="t1-2-1">${t1} vence 2–1</option>
+                  <option value="t2-2-1">${t2} vence 2–1</option>
+                  <option value="t2-2-0">${t2} vence 2–0</option>
+                </select>
+              </div>
+            </div>
+          `;
+          list.appendChild(row);
+          const sel = row.querySelector('select');
+          if (m.result) {
+            const v = m.result.winner === m.t1
+              ? (m.result.score === '2-0' ? 't1-2-0' : 't1-2-1')
+              : (m.result.score === '2-0' ? 't2-2-0' : 't2-2-1');
+            sel.value = v;
+          }
+          sel.addEventListener('change', (e) => {
+            applyMatchResultSelection(m.id, e.target.value);
+            renderTable();
+          });
+        });
+    }
+
+    function renderTable() {
+      const wrap = el('tabelaWrap');
+      if (pairs.length !== 5) { wrap.innerHTML = '<p class="muted">Aguardando as duplas…</p>'; return; }
+      const stats = computeStats();
+      const rows = stats.map(s => `
+        <tr>
+          <td>${pairLabel(s.id)}</td>
+          <td>${s.j}</td>
+          <td>${s.v}</td>
+          <td>${s.d}</td>
+          <td>${s.sp}</td>
+          <td>${s.sc}</td>
+          <td>${s.ss}</td>
+          <td>${s.pts}</td>
+        </tr>
+      `).join('');
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Dupla</th><th>J</th><th>V</th><th>D</th><th>SP</th><th>SC</th><th>Saldo</th><th>Pontos</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function showFinalists() {
+      const res = allResultsEntered();
+      if (!res.ok) {
+        alert('Preencha os resultados de todos os 10 jogos antes de definir os finalistas.');
+        return;
+      }
+      const stats = computeStats();
+      const [f1, f2] = stats.slice(0, 2);
+      el('finalista1').textContent = pairLabel(f1.id);
+      el('finalista2').textContent = pairLabel(f2.id);
+    }
+
+    // Lógica
+    function pairLabel(id) {
+      const p = pairs.find(x => x.id === id);
+      if (!p) return 'Dupla ?';
+      const idx = pairs.indexOf(p);
+      return `Dupla ${idx + 1} (${p.a} + ${p.b})`;
+    }
+
+    function parseInputs() {
+      seeds = uniqueTrimmedNonEmpty(el('seeds').value);
+      others = uniqueTrimmedNonEmpty(el('others').value);
+    }
+
+    function validateCanDraw() {
+      parseInputs();
+      if (seeds.length !== 5 || others.length !== 5) {
+        alert('É necessário ter exatamente 5 cabeças de chave e 5 demais atletas (sem linhas vazias).');
+        return false;
+      }
+      const dup = seeds.filter(x => others.includes(x));
+      if (dup.length > 0) {
+        alert('Há nomes repetidos entre os grupos: ' + dup.join(', '));
+        return false;
+      }
+      return true;
+    }
+
+    function initRemaining() {
+      remainingSeeds = seeds.slice();
+      remainingOthers = others.slice();
+    }
+
+    function drawOnePair() {
+      if (pairs.length === 0 && !validateCanDraw()) return;
+      if (remainingSeeds.length === 0 || remainingOthers.length === 0) {
+        alert('Todos já foram sorteados.');
+        return;
+      }
+      const i = Math.floor(Math.random() * remainingSeeds.length);
+      const j = Math.floor(Math.random() * remainingOthers.length);
+      const a = remainingSeeds.splice(i, 1)[0];
+      const b = remainingOthers.splice(j, 1)[0];
+      pairs.push({ id: nextPairId++, a, b });
+      renderPairs();
+    }
+
+    function drawAllPairs() {
+      if (!validateCanDraw()) return;
+      clearPairsAndMatches();
+      initRemaining();
+      while (remainingSeeds.length && remainingOthers.length) {
+        drawOnePair();
+      }
+    }
+
+    function clearPairsAndMatches(keepIDs=false) {
+      pairs = [];
+      matches = [];
+      el('finalista1').textContent = '—';
+      el('finalista2').textContent = '—';
+      if (!keepIDs) { nextPairId = 1; nextMatchId = 1; }
+      renderPairs(); renderMatches(); renderTable();
+    }
+
+    function refazerSorteio() {
+      if (!validateCanDraw()) return;
+      clearPairsAndMatches();
+      initRemaining();
+      shuffle(remainingSeeds);
+      shuffle(remainingOthers);
+      for (let k = 0; k < 5; k++) {
+        const a = remainingSeeds[k];
+        const b = remainingOthers[k];
+        pairs.push({ id: nextPairId++, a, b });
+      }
+      remainingSeeds = []; remainingOthers = [];
+      renderPairs(); // matches cleared
+    }
+
+    function resetAll() {
+      if (!confirm('Deseja resetar tudo? Isso apagará nomes, sorteios e resultados.')) return;
+      el('seeds').value = '';
+      el('others').value = '';
+      seeds = []; others = [];
+      remainingSeeds = []; remainingOthers = [];
+      clearPairsAndMatches();
+      renderPairs(); renderMatches(); renderTable();
+    }
+
+    function generateMatchups() {
+      if (pairs.length !== 5) { alert('Forme as 5 duplas primeiro.'); return; }
+      matches = [];
+      nextMatchId = 1;
+      for (let i = 0; i < pairs.length; i++) {
+        for (let j = i + 1; j < pairs.length; j++) {
+          matches.push({ id: nextMatchId++, t1: pairs[i].id, t2: pairs[j].id, order: 0, result: null });
+        }
+      }
+      // sortear ordem
+      shuffle(matches);
+      matches.forEach((m, idx) => m.order = idx + 1);
+      renderMatches();
+      renderTable();
+    }
+
+    function reorderMatches() {
+      if (matches.length === 0) return;
+      shuffle(matches);
+      matches.forEach((m, idx) => m.order = idx + 1);
+      renderMatches();
+    }
+
+    function applyMatchResultSelection(matchId, value) {
+      const m = matches.find(x => x.id === matchId);
+      if (!m) return;
+      if (!value) { m.result = null; return; }
+      let winner = null, score = null;
+      if (value === 't1-2-0') { winner = m.t1; score = '2-0'; }
+      if (value === 't1-2-1') { winner = m.t1; score = '2-1'; }
+      if (value === 't2-2-1') { winner = m.t2; score = '2-1'; }
+      if (value === 't2-2-0') { winner = m.t2; score = '2-0'; }
+      m.result = { winner, score };
+    }
+
+    function computeStats() {
+      // inicia stats
+      const map = new Map();
+      pairs.forEach(p => {
+        map.set(p.id, { id: p.id, j: 0, v: 0, d: 0, sp: 0, sc: 0, ss: 0, pts: 0 });
+      });
+      // acumula
+      matches.forEach(m => {
+        if (!m.result) return;
+        const loser = m.result.winner === m.t1 ? m.t2 : m.t1;
+        const w = map.get(m.result.winner);
+        const l = map.get(loser);
+        const spW = 2;
+        const scW = (m.result.score === '2-1') ? 1 : 0;
+        const spL = scW;
+        const scL = spW;
+        w.j += 1; w.v += 1; w.sp += spW; w.sc += scW;
+        l.j += 1; l.d += 1; l.sp += spL; l.sc += scL;
+      });
+      // finais
+      for (const s of map.values()) {
+        s.ss = s.sp - s.sc;
+        s.pts = s.v * 2; // 2 pontos por vitória (exibição)
+      }
+      // ordena: saldo desc, vit desc, sets pró desc
+      const arr = Array.from(map.values());
+      arr.sort((a,b) => {
+        if (b.ss !== a.ss) return b.ss - a.ss;
+        if (b.v !== a.v) return b.v - a.v;
+        if (b.sp !== a.sp) return b.sp - a.sp;
+        return a.id - b.id;
+      });
+      return arr;
+    }
+
+    function allResultsEntered() {
+      if (matches.length !== 10) return { ok: false, missing: 10 - matches.length };
+      const missing = matches.filter(m => !m.result).length;
+      return { ok: missing === 0, missing };
+    }
+
+    function clearResults() {
+      if (matches.length === 0) return;
+      if (!confirm('Limpar todos os resultados dos jogos?')) return;
+      matches.forEach(m => m.result = null);
+      renderMatches();
+      renderTable();
+      el('finalista1').textContent = '—';
+      el('finalista2').textContent = '—';
+    }
+
+    // Eventos
+    el('btnSortear1').addEventListener('click', () => {
+      if (pairs.length === 0) { // primeira vez
+        if (!validateCanDraw()) return;
+        initRemaining();
+      }
+      if (pairs.length >= 5) { alert('As 5 duplas já foram formadas.'); return; }
+      drawOnePair();
+    });
+    el('btnSortearTodos').addEventListener('click', drawAllPairs);
+    el('btnRefazer').addEventListener('click', refazerSorteio);
+    el('btnResetar').addEventListener('click', resetAll);
+    el('btnGerarJogos').addEventListener('click', generateMatchups);
+    el('btnReordenarJogos').addEventListener('click', reorderMatches);
+    el('btnLimparResultados').addEventListener('click', clearResults);
+    el('btnFinalistas').addEventListener('click', showFinalists);
+  </script>
+</body>
+</html>
+```
